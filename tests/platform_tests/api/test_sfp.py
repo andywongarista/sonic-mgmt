@@ -160,6 +160,19 @@ class TestSfpApi(PlatformApiTestBase):
     #
 
     def test_get_name(self,  duthosts, enum_rand_one_per_hwsku_hostname, localhost, platform_api_conn):
+        # Need to retrieve all sfps and call get_name on the retrieved Sfp objects directly
+        # to handle Sfp indexing differences between platforms, as retrieving the i-th Sfp object
+        # may not necessarily correspond to the what's defined in platform facts at index i
+        all_sfps = chassis.get_all_sfps(platform_api_conn)
+        if self.expect(all_sfps is not None, "Failed to retrieve SFPs"):
+           if self.expect(isinstance(all_sfps, list), "SFPs are not in a list"):
+              for i, sfp_obj in enumerate(all_sfps):
+                  if i in self.candidate_sfp:
+                      name = sfp_obj.get_name()
+                      self.expect(isinstance(name, STRING_TYPE), "Transceiver {} name appears incorrect".format(i))
+                      self.compare_value_with_platform_facts('name', name, i, duthosts[enum_rand_one_per_hwsku_hostname])
+        self.assert_expectations()
+
         for i in self.candidate_sfp:
             name = sfp.get_name(platform_api_conn, i)
             if self.expect(name is not None, "Unable to retrieve transceiver {} name".format(i)):
