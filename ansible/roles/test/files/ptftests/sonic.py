@@ -225,22 +225,19 @@ class Sonic(host_device.HostDevice):
             }
 
     def extract_from_logs(self, regexp, data, min_timestamp=None):
-        raw_data = []
         result = defaultdict(list)
         re_compiled = re.compile(regexp)
+        current_year = datetime.datetime.now().year
         for line in data:
             m = re_compiled.match(line)
             if not m:
                 continue
-            log_time = datetime.datetime.strptime(str(datetime.datetime.now().year) + " " + m.group(1), "%Y %b %d %X")
+            log_time = datetime.datetime.strptime(str(current_year) + " " + m.group(1), "%Y %b %d %X")
             # Python 3 version (Python 2 doesn't have timestamp():
-            # raw_data.append((log_time.timestamp(), m.group(2), m.group(3)))
-            raw_data.append((time.mktime(log_time.timetuple()), m.group(2), m.group(3)))
-
-        if len(raw_data) > 0:
-            for when, what, status in raw_data:
-                if min_timestamp and when >= min_timestamp:
-                    result[what].append((when, status))
+            # when, what, status = log_time.timestamp(), m.group(2), m.group(3)
+            when, what, status = time.mktime(log_time.timetuple()), m.group(2), m.group(3)
+            if min_timestamp and when >= min_timestamp:
+               result[what].append((when, status))
 
         return result
 
